@@ -15,6 +15,13 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
+    if resp.status != 200:
+        print(resp.error)
+        return None
+    pageContent = resp.raw_response.content #need to parse this for links
+
+
+
     return list()
 
 def is_valid(url):
@@ -25,6 +32,17 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+
+        regExp = r" *.(ics|cs|informatics|stat).uci.edu/*"  #not sure if this regex is the correct format
+        if not re.match(regExp, parsed.netloc):
+            return false
+
+        '''
+        if parsed.netloc not in set(["ics.uci.edu", "cs.uci.edu ", "informatics.uci.edu ", "stat.uci.edu"]):
+            return False
+        not sure if this is correct
+        '''
+        
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
