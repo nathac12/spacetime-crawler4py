@@ -20,10 +20,16 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         print(resp.error)
         return None
+
+
     pageContent = resp.raw_response.content 
     soup = BeautifulSoup(pageContent, 'html.parser')
-  
 
+    for tag in soup.find_all('a', href=True):
+        href = tag.get('href').strip()
+
+        if href.startswith("http://") or href.startswith("https://"): #only covers case where the href is a full link -> href can be partia link
+            linkList.append(href)
 
     return linkList
 
@@ -33,18 +39,20 @@ def is_valid(url):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        if parsed.scheme not in ("http", "https"):
             return False
 
-        regExp = r" *.(ics|cs|informatics|stat).uci.edu/*"  #not sure if this regex is the correct format
+        host = parsed.netloc.lower()
+        regExp = r"^(ics|cs|informatics|stat)\.uci\.edu$"  #this should be right ?
         if not re.match(regExp, parsed.netloc):
-            return false
+            return False
 
         '''
         if parsed.netloc not in set(["ics.uci.edu", "cs.uci.edu ", "informatics.uci.edu ", "stat.uci.edu"]):
             return False
         not sure if this is correct
         '''
+        #regex should cover it
         
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
