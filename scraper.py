@@ -1,12 +1,15 @@
 import re
 from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
+from lxml import html
+import PartA as A
+from typing import List, Dict
 
 # ANALYTICS FUNTIONS ideas 
 ANALYTICS_FILE = "analytics.json"
 
 def load_analytics():
-
+    return
 
 STOP_WORDS = {
     'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and',
@@ -33,11 +36,37 @@ STOP_WORDS = {
 
 
 def save_analytics(analytics):
-    
+    return
+
 def update_analytics():
+    return
 
 
+def tokenize(text: str) -> List[str]:
+    tokens = []
+    current = []
 
+    for char in text.lower():
+        if 'a' <= char <= 'z' or '0' <= char <= '9':
+            current.append(char)
+        else:
+            if current:
+                tokens.append("".join(current))
+                current = []
+
+    if current:
+        tokens.append("".join(current))
+
+    return tokens
+
+def tokenize_soup(soup: BeautifulSoup) -> List[str]:
+    for tag in soup(["script", "style", "noscript", "iframe"]):
+        tag.decompose() #takes the items that arent important text ie css and removes them basically
+
+    text = soup.get_text(separator=" ") #pulls out text and seperates it with a space so we can tokenize it
+    text = re.sub(r"\s+", " ", text).strip()  #\s+ = multiple spaces/newlines/tabs -> replaces any whitepspace with a single space
+
+    return tokenize(text)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -59,15 +88,20 @@ def extract_next_links(url, resp):
         return linkList 
 
     pageContent = resp.raw_response.content 
-    soup = BeautifulSoup(pageContent, 'html.parser')
+    soup = BeautifulSoup(pageContent, 'lxml')
 
     #check for word count
-    word_count = update_analytics(??)
+    soup_tokens = tokenize_soup(soup)
+    word_count = len(soup_tokens)
+
+    #word_count = update_analytics(??)
 
     #check for low info content (trap detection)
     if word_count < 100: #random # we need to decide a number i think
         print(f"({word_count}) word count is low info content for {url}, skipping")
         return linkList
+
+    A.compute_word_frequencies(soup_tokens)
     
     for tag in soup.find_all('a', href=True):
         href = tag.get('href').strip()
