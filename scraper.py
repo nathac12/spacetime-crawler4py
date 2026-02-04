@@ -7,18 +7,12 @@ from typing import List, Dict
 import logging 
 
 logging.basicConfig(
-    filename='crawler.log'
+    filename='crawler.log',
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
-
-# ANALYTICS FUNTIONS ideas 
-ANALYTICS_FILE = "analytics.json"
-
-def load_analytics():
-    return
 
 STOP_WORDS = {
     'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and',
@@ -43,14 +37,35 @@ STOP_WORDS = {
     'yourselves'
 }
 
+data = {
+    'urls': set(),
+    'longest': {'url': '', 'count': 0},
+    'words': Counter(),
+    'subs': defaultdict(set)
+}
 
-def save_analytics(analytics):
-    return
+DATA_FILE = 'data.json'
 
-def update_analytics():
-    return
+#didnt double check my code
+def load_data(): 
+    global data
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                saved = json.load(f)
+                data['urls'] = set(saved.get('urls', []))
+                data['longest'] = saved.get('longest', {'url': '', 'count': 0})
+                data['words'] = Counter(saved.get('words', {}))
+                sub_data = saved.get('subs', {})
+                data['subs'] = defaultdict(set)
+                for sub, pages in sub_data.items():
+                    data['subs'][sub] = set(pages)
+        except Exception as e:
+            logger.error(f"Error loading data: {e}")
 
-
+def save_data():
+def update_data(url, word_count, tokens, subdomain):
+    
 def tokenize(text: str) -> List[str]:
     tokens = []
     current = []
@@ -92,34 +107,41 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     linkList = []
+    
     if resp.status != 200:
-        print(resp.error)
+        logger.debug(f"Got status {resp.status} for {url}")
         return linkList 
-
-    pageContent = resp.raw_response.content 
-    soup = BeautifulSoup(pageContent, 'lxml')
-
-    #check for word count
-    soup_tokens = tokenize_soup(soup)
-    word_count = len(soup_tokens)
-
-    #word_count = update_analytics(??)
-
-    #check for low info content (trap detection)
-    if word_count < 100: #random # we need to decide a number i think
-        print(f"({word_count}) word count is low info content for {url}, skipping")
+        
+    if not resp.raw_response or not resp.raw_response.content:
+        logger.debug(f"No content for {url}")
         return linkList
-
-    A.compute_word_frequencies(soup_tokens)
     
-    for tag in soup.find_all('a', href=True):
-        href = tag.get('href').strip()
+    try:
+        pageContent = resp.raw_response.content 
+        soup = BeautifulSoup(pageContent, 'lxml')
     
-    full_link = urljoin(url, href)
-    clean_link, _ = urldefrag(full_link)
+        #check for word count
+        soup_tokens = tokenize_soup(soup)
+        
+        #check for low info content (trap detection)
+        if word_count < 50:
+            logger.info(f"Only {word_count} words on {url}, skipping")
+            return linkList
     
-    if clean_link.startswith("http://") or clean_link.startswith("https://"): #updated changes
-        linkList.append(clean_link)
+        A.compute_word_frequencies(soup_tokens) #there is no function to call this?
+        
+        for tag in soup.find_all('a', href=True):
+            href = tag.get('href').strip()
+            if not href or href.startswith('#') or href.startswith('javascript:'):
+                continue
+            full_link = urljoin(url, href)
+            clean_link, _ = urldefrag(full_link)
+            if clean_link.startswith("http://") or clean_link.startswith("https://"):
+                linkList.append(clean_link)
+    
+    except Exception as e:
+        logger.error(f"Error processing {url}: {e}")
+        return linkList
 
     return linkList
 
@@ -146,7 +168,7 @@ def is_valid(url):
         '''
         #regex should cover it
         
-        return not re.match(
+        if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -155,7 +177,8 @@ def is_valid(url):
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
-       
+           return False
+
         #some trap detection patterns
         trap_patterns = [
             r'/tag/',
@@ -164,17 +187,25 @@ def is_valid(url):
             r'/feed/',
             r'\?version=',
             r'/wp-json/',
+            r'/calendar/',
+            r'\?action=',
+            r'\?format=',
+            r'/print/',
+            r'\?print=',
+            r'/pdf/',
+            r'/download/',
+            r'/attachment/'
         ]
         
         for pattern in trap_patterns:
             if re.search(pattern, url.lower()):
-                logger.info(f"Trap pattern blocked: {url}")
+                logger.debug(f"Trap pattern blocked: {url}")
                 return False
 
         #repeated path segments
         path_seg = [seg for seg in parsed.path.split('/') if seg]
         if len(path_segments) != len(set(path_segments)):
-            logger.info(f"Repeated path segment trap blocked: {url}")
+            logger.debug(f"Repeated path segment trap blocked: {url}")
             return False
         
         if len(path_seg) > 10:
@@ -184,11 +215,25 @@ def is_valid(url):
         if len(url) > 200:
             logger.info(f"URL too long blocked: {url}")
             return False
+        
+        query = parsed.query.lower()
+        if query:
+            # Too many query parameters is suspicious
+            if query.count('&') > 5:
+                logger.debug(f"Too many query params: {url}")
+                return False
             
+            #check for session IDs & other trap
+            trap_params = ['sessionid', 'sid', 'phpsessid', 'jsessionid']
+            if any(param in query for param in trap_params):
+                logger.debug(f"Session ID in URL: {url}")
+                return False
+                
         return True
         
     except Exception as e:
         logger.error(f"Error Parsing URL {url}: {e}")
         return False
 
+load_data()
 
