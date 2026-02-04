@@ -168,19 +168,27 @@ def is_valid(url):
         
         for pattern in trap_patterns:
             if re.search(pattern, url.lower()):
+                logger.info(f"Trap pattern blocked: {url}")
                 return False
-        
+
+        #repeated path segments
         path_seg = [seg for seg in parsed.path.split('/') if seg]
+        if len(path_segments) != len(set(path_segments)):
+            logger.info(f"Repeated path segment trap blocked: {url}")
+            return False
         
         if len(path_seg) > 10:
+            logger.info(f"Path too deep blocked: {url}")
             return False
             
         if len(url) > 200:
+            logger.info(f"URL too long blocked: {url}")
             return False
             
         return True
         
-    except TypeError:
-        print ("TypeError for ", parsed)
-        raise
+    except Exception as e:
+        logger.error(f"Error Parsing URL {url}: {e}")
+        return False
+
 
