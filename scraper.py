@@ -64,8 +64,19 @@ def load_data():
             logger.error(f"Error loading data: {e}")
 
 def save_data():
+
 def update_data(url, word_count, tokens, subdomain):
-    
+
+def get_subdomain(url):
+    try:
+        parsed = urlparse(url)
+        netloc = parsed.netloc.lower()
+        if netloc.endswith('.uci.edu'):
+            return netloc
+        return None
+    except:
+        return None
+
 def tokenize(text: str) -> List[str]:
     tokens = []
     current = []
@@ -204,7 +215,7 @@ def is_valid(url):
 
         #repeated path segments
         path_seg = [seg for seg in parsed.path.split('/') if seg]
-        if len(path_segments) != len(set(path_segments)):
+        if len(path_seg) != len(set(path_seg)):
             logger.debug(f"Repeated path segment trap blocked: {url}")
             return False
         
@@ -236,4 +247,5 @@ def is_valid(url):
         return False
 
 load_data()
+
 
