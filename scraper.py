@@ -1,13 +1,13 @@
 import re
 from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
+from tokenizer import PartA, PartB
 
 # ANALYTICS FUNTIONS ideas 
 ANALYTICS_FILE = "analytics.json"
 
 def load_analytics():
-
-
+    return None
 STOP_WORDS = {
     'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and',
     'any', 'are', "aren't", 'as', 'at', 'be', 'because', 'been', 'before', 'being',
@@ -33,8 +33,16 @@ STOP_WORDS = {
 
 
 def save_analytics(analytics):
+    return None
     
-def update_analytics():
+def update_analytics(webFile):
+    tokenList = PartA.tokenize(webFile)
+    tokenFreq = PartA.compute_word_frequencies(tokenList)
+    workCount = 0
+    for token, count in tokenFreq.items():
+        if not (token in STOP_WORDS) : 
+            wordCount += count
+    return wordCount
 
 
 
@@ -60,9 +68,9 @@ def extract_next_links(url, resp):
 
     pageContent = resp.raw_response.content 
     soup = BeautifulSoup(pageContent, 'html.parser')
-
+    pageText = soup.get_text()
     #check for word count
-    word_count = update_analytics(??)
+    word_count = update_analytics(pageText)
 
     #check for low info content (trap detection)
     if word_count < 100: #random # we need to decide a number i think
@@ -72,11 +80,11 @@ def extract_next_links(url, resp):
     for tag in soup.find_all('a', href=True):
         href = tag.get('href').strip()
     
-    full_link = urljoin(url, href)
-    clean_link, _ = urldefrag(full_link)
-    
-    if clean_link.startswith("http://") or clean_link.startswith("https://"): #updated changes
-        linkList.append(clean_link)
+        full_link = urljoin(url, href)
+        clean_link, _ = urldefrag(full_link)
+        
+        if clean_link.startswith("http://") or clean_link.startswith("https://"): #updated changes
+            linkList.append(clean_link)
 
     return linkList
 
@@ -96,14 +104,8 @@ def is_valid(url):
         if not (re.match(regExp, parsed.netloc) or re.match(regExp2, parsed.netloc)):
             return False
 
-        '''
-        if parsed.netloc not in set(["ics.uci.edu", "cs.uci.edu ", "informatics.uci.edu ", "stat.uci.edu"]):
-            return False
-        not sure if this is correct
-        '''
-        #regex should cover it
         
-        return not re.match(
+        if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -111,7 +113,8 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
+            return False
        
         #some trap detection patterns
         trap_patterns = [
