@@ -5,7 +5,8 @@ from lxml import html
 import PartA as A
 from typing import List, Dict
 import logging 
-
+from collections import Counter, defaultdict
+import os
 logging.basicConfig(
     filename='crawler.log',
     level=logging.INFO,
@@ -64,8 +65,9 @@ def load_data():
             logger.error(f"Error loading data: {e}")
 
 def save_data():
-
+    return None
 def update_data(url, word_count, tokens, subdomain):
+    return None
 
 def get_subdomain(url):
     try:
@@ -187,7 +189,7 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
            return False
 
         #some trap detection patterns
