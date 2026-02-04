@@ -4,6 +4,15 @@ from bs4 import BeautifulSoup
 from lxml import html
 import PartA as A
 from typing import List, Dict
+import logging 
+
+logging.basicConfig(
+    filename='crawler.log'
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
 
 # ANALYTICS FUNTIONS ideas 
 ANALYTICS_FILE = "analytics.json"
