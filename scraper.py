@@ -135,13 +135,19 @@ def extract_next_links(url, resp):
     
         #check for word count
         soup_tokens = tokenize_soup(soup)
-        
+        tokenFreq = A.compute_word_frequencies(soup_tokens) #there is no function to call this?
+        word_count = 0
+        for token, count in tokenFreq.items():
+            if not (token in STOP_WORDS) : 
+                word_count += count
         #check for low info content (trap detection)
+        
         if word_count < 50:
             logger.info(f"Only {word_count} words on {url}, skipping")
             return linkList
+        
     
-        A.compute_word_frequencies(soup_tokens) #there is no function to call this?
+        
         
         for tag in soup.find_all('a', href=True):
             href = tag.get('href').strip()
@@ -168,7 +174,6 @@ def is_valid(url):
             return False
 
         host = parsed.netloc.lower()
-        
         regExp = r"^.*\.(ics|cs|informatics|stat)\.uci\.edu$"  #updated?
         regExp2 = r"^(ics|cs|informatics|stat)\.uci\.edu$"
         if not (re.match(regExp, parsed.netloc) or re.match(regExp2, parsed.netloc)):
