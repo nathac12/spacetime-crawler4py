@@ -79,13 +79,23 @@ def save_data():
         logger.error(f"Error saving data: {e}")
 
 
-def update_data(url, word_count, tokens, subdomain):
-    return None
-
+def update_data(url, word_count, tokenFreq):
+# track longest page
+    if word_count > data['longest']['count']:
+        data['longest'] = {'url': url, 'count': word_count}
+        
+        # update word frequencies
+    for token, count in tokenFreq.items():
+        if token not in STOP_WORDS:
+            data['words'][token] += count
+        
 def get_subdomain(url):
     try:
         parsed = urlparse(url)
         netloc = parsed.netloc.lower()
+
+        if netloc.startswith('www.'):
+            netloc = netloc[4:]
         if netloc.endswith('.uci.edu'):
             return netloc
         return None
@@ -164,21 +174,9 @@ def extract_next_links(url, resp):
         if word_count < 50:
             logger.info(f"Only {word_count} words on {url}, skipping")
             return linkList
-    #analytics
-        # track longest page
-        if word_count > data['longest']['count']:
-            data['longest'] = {'url': url, 'count': word_count}
-        
-        # update word frequencies
-        for token, count in tokenFreq.items():
-            if token not in STOP_WORDS:
-                data['words'][token] += count
-        
-        # track subdomains
-        sub = get_subdomain(url)
-        if sub:
-            data['subs'][sub].add(url)
-        
+            
+        update_data(url, word_count, tokenFreq)
+
         for tag in soup.find_all('a', href=True):
             href = tag.get('href').strip()
             if not href or href.startswith('#') or href.startswith('javascript:'):
@@ -285,6 +283,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
