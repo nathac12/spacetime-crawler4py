@@ -128,6 +128,12 @@ def extract_next_links(url, resp):
     if not resp.raw_response or not resp.raw_response.content:
         logger.debug(f"No content for {url}")
         return linkList
+        
+    #duplicate page
+        if url in data['urls']:
+            logger.debug(f"Duplicate page skipped: {url}")
+            return []
+        data['urls'].add(url) #marks page as seen
     
     try:
         pageContent = resp.raw_response.content 
@@ -145,9 +151,20 @@ def extract_next_links(url, resp):
         if word_count < 50:
             logger.info(f"Only {word_count} words on {url}, skipping")
             return linkList
+    #analytics
+        # track longest page
+        if word_count > data['longest']['count']:
+            data['longest'] = {'url': url, 'count': word_count}
         
-    
+        # update word frequencies
+        for token, count in tokenFreq.items():
+            if token not in STOP_WORDS:
+                data['words'][token] += count
         
+        # track subdomains
+        sub = get_subdomain(url)
+        if sub:
+            data['subs'][sub].add(url)
         
         for tag in soup.find_all('a', href=True):
             href = tag.get('href').strip()
@@ -234,9 +251,6 @@ def is_valid(url):
             logger.info(f"URL too long blocked: {url}")
             return False
 
-        if url in data['urls']:
-            logger.debug(f"Duplicate page skipped: {url}")
-            return []
         
         query = parsed.query.lower()
         if query:
@@ -258,6 +272,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
