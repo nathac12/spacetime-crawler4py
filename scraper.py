@@ -88,6 +88,10 @@ def update_data(url, word_count, tokenFreq):
     for token, count in tokenFreq.items():
         if token not in STOP_WORDS:
             data['words'][token] += count
+
+    sub = get_subdomain(url)
+        if sub:
+            data['subs'][sub].add(url)
         
 def get_subdomain(url):
     try:
@@ -153,10 +157,10 @@ def extract_next_links(url, resp):
         return linkList
         
     #duplicate page
-        if url in data['urls']:
-            logger.debug(f"Duplicate page skipped: {url}")
-            return []
-        data['urls'].add(url) #marks page as seen
+    if url in data['urls']:
+        logger.debug(f"Duplicate page skipped: {url}")
+        return []
+    data['urls'].add(url) #marks page as seen
     
     try:
         pageContent = resp.raw_response.content 
@@ -283,6 +287,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
