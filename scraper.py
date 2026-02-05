@@ -176,7 +176,7 @@ def is_valid(url):
         host = parsed.netloc.lower()
         regExp = r"^.*\.(ics|cs|informatics|stat)\.uci\.edu$"  #updated?
         regExp2 = r"^(ics|cs|informatics|stat)\.uci\.edu$"
-        if not (re.match(regExp, parsed.netloc) or re.match(regExp2, parsed.netloc)):
+        if not (re.match(regExp, host) or re.match(regExp2, host)):
             return False
 
         '''
@@ -201,7 +201,7 @@ def is_valid(url):
         trap_patterns = [
             r'/tag/',
             r'\?share=',
-            r'\?page=\d+',
+            r'\bpage=\d+',
             r'/feed/',
             r'\?version=',
             r'/wp-json/',
@@ -233,6 +233,10 @@ def is_valid(url):
         if len(url) > 200:
             logger.info(f"URL too long blocked: {url}")
             return False
+
+        if url in data['urls']:
+            logger.debug(f"Duplicate page skipped: {url}")
+            return []
         
         query = parsed.query.lower()
         if query:
@@ -254,5 +258,6 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
