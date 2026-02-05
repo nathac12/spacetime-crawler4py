@@ -7,6 +7,8 @@ from typing import List, Dict
 import logging 
 from collections import Counter, defaultdict
 import os
+import json
+
 logging.basicConfig(
     filename='crawler.log',
     level=logging.INFO,
@@ -65,7 +67,18 @@ def load_data():
             logger.error(f"Error loading data: {e}")
 
 def save_data():
-    return None
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump({
+                'urls': list(data['urls']),
+                'longest': data['longest'],
+                'words': dict(data['words']),
+                'subs': {k: list(v) for k, v in data['subs'].items()}
+            }, f)
+    except Exception as e:
+        logger.error(f"Error saving data: {e}")
+
+
 def update_data(url, word_count, tokens, subdomain):
     return None
 
@@ -272,6 +285,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
