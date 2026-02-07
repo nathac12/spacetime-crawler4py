@@ -70,13 +70,15 @@ def load_data():
             logger.error(f"Error loading data: {e}")
 
 def save_data():
+
     try:
         with open(DATA_FILE, 'w') as f:
+            sorted_word_list = data['words'].most_common()
             json.dump({
                 'urls': list(data['urls']),
                 'content_hashes': list(data['content_hashes']),
                 'longest': data['longest'],
-                'words': dict(data['words']),
+                'words': dict(sorted_word_list),
                 'subs': {k: list(v) for k, v in data['subs'].items()}
             }, f)
     except Exception as e:
@@ -90,7 +92,7 @@ def update_data(url, word_count, tokenFreq):
         
         # update word frequencies
     for token, count in tokenFreq.items():
-        if token not in STOP_WORDS:
+        if token not in STOP_WORDS and len(token) > 1:
             data['words'][token] += count
 
     sub = get_subdomain(url)
@@ -186,7 +188,7 @@ def extract_next_links(url, resp):
     
         word_count = 0
         for token, count in tokenFreq.items():
-            if not (token in STOP_WORDS) : 
+            if not (token in STOP_WORDS): 
                 word_count += count
         #check for low info content (trap detection)
         
@@ -255,7 +257,10 @@ def is_valid(url):
             r'/wp-json/',
             r'/event/',
             r'/events/',
-            r'\?tab_files='
+            r'\?tab_files=',
+            r'do=media',                     
+            r'/sidebar',
+            r'\?rev=',     
             r'/calendar/',
             r'/events/\d{4}-\d{2}-\d{2}',
             r'\?ical=',
