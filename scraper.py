@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse, urljoin, urldefrag
+from utils.download import download
 from bs4 import BeautifulSoup
 from lxml import html
 import PartA as A
@@ -8,6 +9,7 @@ import logging
 from collections import Counter, defaultdict
 import os
 import json
+import hashlib
 
 logging.basicConfig(
     filename='crawler.log',
@@ -44,7 +46,8 @@ data = {
     'urls': set(),
     'longest': {'url': '', 'count': 0},
     'words': Counter(),
-    'subs': defaultdict(set)
+    'subs': defaultdict(set),
+    'fingerprints' : {}
 }
 
 DATA_FILE = 'data.json'
@@ -61,6 +64,12 @@ def load_data():
                 data['words'] = Counter(saved.get('words', {}))
                 sub_data = saved.get('subs', {})
                 data['subs'] = defaultdict(set)
+
+                finPrint_data = saved.get('fingerprints', {})
+                data['fingerprints'] = {}
+                for fingerprint, url in finPrint_data.items():
+                    data['fingerprints'][int(fingerprint)] = url
+
                 for sub, pages in sub_data.items():
                     data['subs'][sub] = set(pages)
         except Exception as e:
@@ -69,10 +78,12 @@ def load_data():
 def save_data():
     try:
         with open(DATA_FILE, 'w') as f:
+            sorted_word_list = data['words'].most_common()
             json.dump({
                 'urls': list(data['urls']),
                 'longest': data['longest'],
-                'words': dict(data['words']),
+                'words': dict(sorted_word_list),
+                'fingerprints': dict(data['fingerprints']),
                 'subs': {k: list(v) for k, v in data['subs'].items()}
             }, f)
     except Exception as e:
@@ -86,10 +97,10 @@ def update_data(url, word_count, tokenFreq):
         
         # update word frequencies
     for token, count in tokenFreq.items():
-        if token not in STOP_WORDS:
+        if token not in STOP_WORDS and not len(token) <= 2:
             data['words'][token] += count
 
-    sub = get_subdomain(url)
+        sub = get_subdomain(url)
         if sub:
             data['subs'][sub].add(url)
         
@@ -132,6 +143,52 @@ def tokenize_soup(soup: BeautifulSoup) -> List[str]:
 
     return tokenize(text)
 
+def getFingerPrint(tokenFreq): #https://docs.python.org/3/library/hashlib.html#hash-algorithms
+    b = 256
+    hashes = [0] * b
+    for token, count in tokenFreq.items(): #step1: get all the weights
+        #step 2: get the hashvalue
+        hash_object = hashlib.sha256()
+        hash_object.update(token.encode('utf-8'))
+        binary_hash = int.from_bytes(hash_object.digest(), byteorder='big')
+        lastbit = binary_hash & 1
+        #step 3 : get the weight vector
+        for i in range(b):
+            bit_at_i = (binary_hash >> i) & 1 #shifts the bits by i and grabs the last bit
+            if bit_at_i == 1:
+                hashes[i] += count  
+            else:
+                hashes[i] -= count 
+    #step 4 get the fingerprint
+    fingerprint_bits = []
+    for val in hashes:
+        if val > 0:
+            fingerprint_bits.append("1")
+        else:
+            fingerprint_bits.append("0")
+    fingerprint= "".join(fingerprint_bits)
+    return int(fingerprint, 2)
+        
+def calcSimilarity(fingerPrint1, fingerPrint2): #returns true if we determine that two fingerprints are similar
+    threshold = 0.95
+    diff = fingerPrint1 ^ fingerPrint2
+    diffBits = diff.bit_count()
+    simRatio = 1 - (diffBits / 256)  #there are 256 bits in the binary
+    if simRatio > threshold:
+        return True
+    else:
+        return False
+
+
+def checkDupe(fingerPrintInput, urlInput): #returns true if we determine there is a dupe
+    for fingerprint, url in data['fingerprints'].items():
+        if(calcSimilarity(fingerPrintInput, fingerprint)):
+            logger.info(f"This url, {urlInput}, is a close copy of {url}")
+            return True
+    return False
+
+
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -169,9 +226,17 @@ def extract_next_links(url, resp):
         #check for word count
         soup_tokens = tokenize_soup(soup)
         tokenFreq = A.compute_word_frequencies(soup_tokens) #there is no function to call this?
+
+        fingerPrint = getFingerPrint(tokenFreq)
+        if(checkDupe(fingerPrint, url)):
+            return linkList
+        data['fingerprints'][fingerPrint] = url
+        
+
+
         word_count = 0
         for token, count in tokenFreq.items():
-            if not (token in STOP_WORDS) : 
+            if not (token in STOP_WORDS or len(token) <= 2) : 
                 word_count += count
         #check for low info content (trap detection)
         
@@ -189,11 +254,10 @@ def extract_next_links(url, resp):
             clean_link, _ = urldefrag(full_link)
             if clean_link.startswith("http://") or clean_link.startswith("https://"):
                 linkList.append(clean_link)
-    
     except Exception as e:
         logger.error(f"Error processing {url}: {e}")
         return linkList
-
+    save_data()
     return linkList
 
 def is_valid(url):
