@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
-
+from scraper import save_data, load_data, logger
 
 def main(config_file, restart):
     cparser = ConfigParser()
@@ -12,7 +12,15 @@ def main(config_file, restart):
     config = Config(cparser)
     config.cache_server = get_cache_server(config, restart)
     crawler = Crawler(config, restart)
-    crawler.start()
+    try:
+        crawler.start()
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt")
+    except Exception as e:
+        logger.info(f"Crawler crashed: {e}")
+    finally:
+        logger.info("Saving data")
+        save_data()
 
 
 if __name__ == "__main__":
