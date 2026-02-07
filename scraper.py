@@ -254,6 +254,7 @@ def is_valid(url):
             r'\?version=',
             r'/wp-json/',
             r'/event/',
+            r'/events/',
             r'/calendar/',
             r'/events/\d{4}-\d{2}-\d{2}',
             r'\?ical=',
