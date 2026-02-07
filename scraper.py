@@ -255,19 +255,19 @@ def is_valid(url):
             r'/feed/',
             r'\?version=',
             r'/wp-json/',
-            
+
             r'/event/',
             r'/events/',
             r'\?tab_files=',
             r'\?do=index',
             r'\?do=revision',
-            r'\?do=login'
-            r'\?do=media',                     
+            r'\?do=login',
+            r'do=media',                     
             r'/sidebar',
             r'\?rev=',   
             r'\?do=backlink',
-            r'\?do=revisions'
-            r'\?do=recent'
+            r'\?do=revisions',
+            r'\?do=recent',
 
             r'/calendar/',
             r'/events/\d{4}-\d{2}-\d{2}',
