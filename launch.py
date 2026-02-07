@@ -20,7 +20,7 @@ def main(config_file, restart):
         logger.info(f"Crawler crashed: {e}")
     finally:
         logger.info("Saving data")
-        save_data()
+        save_data() 
 
 
 if __name__ == "__main__":

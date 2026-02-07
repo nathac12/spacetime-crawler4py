@@ -268,6 +268,9 @@ def is_valid(url):
             r'\?do=backlink',
             r'\?do=revisions',
             r'\?do=recent',
+            r'\?do=export_pdf'
+            r'[?&]C=[NMSD];O=[AD]'
+            r'\?ns='
 
             r'/calendar/',
             r'/events/\d{4}-\d{2}-\d{2}',
