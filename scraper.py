@@ -269,6 +269,7 @@ def is_valid(url):
             r'/comment-page-',
             r'\?like=',
             r'\?login=',
+            r'\?idx=',
             r'/trackback/',
             r'\?filter=',
             r'\?sort=',
