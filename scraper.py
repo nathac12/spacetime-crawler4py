@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, urljoin, urldefrag
+from urllib.parse import urlparse, urljoin, urldefrag, parse_qs, urlencode
 from bs4 import BeautifulSoup
 from lxml import html
 import PartA as A
@@ -206,6 +206,7 @@ def is_valid(url):
             return False
 
         host = parsed.netloc.lower()
+        
         regExp = r"^.*\.(ics|cs|informatics|stat)\.uci\.edu$"  #updated?
         regExp2 = r"^(ics|cs|informatics|stat)\.uci\.edu$"
         if not (re.match(regExp, host) or re.match(regExp2, host)):
@@ -245,13 +246,32 @@ def is_valid(url):
             r'/pdf/',
             r'/download/',
             r'/attachment/'
+            r'\?replytocom=',
+            r'/comment-page-',
+            r'\?like=',
+            r'\?login=',
+            r'/trackback/',
+            r'\?filter=',
+            r'\?sort=',
+            r'\?order='
         ]
         
         for pattern in trap_patterns:
             if re.search(pattern, url.lower()):
                 logger.debug(f"Trap pattern blocked: {url}")
                 return False
+                
+        if re.search(r'tribe-bar-date=\d{4}-\d{2}-\d{2}', url):
+            logger.debug(f"Calendar date trap blocked: {url}")
+            return False
 
+        query_lower = parsed.query.lower()
+        if 'do=media' in query_lower:
+            param_count = query_lower.count('&') + 1
+            if param_count > 3:
+                logger.debug(f"Media manager variation blocked: {url}")
+                return False
+            
         #repeated path segments
         path_seg = [seg for seg in parsed.path.split('/') if seg]
         if len(path_seg) != len(set(path_seg)):
@@ -265,7 +285,6 @@ def is_valid(url):
         if len(url) > 200:
             logger.info(f"URL too long blocked: {url}")
             return False
-
         
         query = parsed.query.lower()
         if query:
@@ -287,6 +306,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
