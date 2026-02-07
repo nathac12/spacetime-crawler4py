@@ -238,6 +238,7 @@ def is_valid(url):
             r'/feed/',
             r'\?version=',
             r'/wp-json/',
+            r'/event/',
             r'/calendar/',
             r'\?action=',
             r'\?format=',
