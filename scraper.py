@@ -8,7 +8,6 @@ import logging
 from collections import Counter, defaultdict
 import os
 import json
-import hashlib
 
 logging.basicConfig(
     filename='crawler.log',
@@ -322,3 +321,4 @@ def is_valid(url):
         return False
 
 load_data()
+
