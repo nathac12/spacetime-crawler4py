@@ -90,8 +90,8 @@ def update_data(url, word_count, tokenFreq):
             data['words'][token] += count
 
     sub = get_subdomain(url)
-        if sub:
-            data['subs'][sub].add(url)
+    if sub:
+        data['subs'][sub].add(url)
         
 def get_subdomain(url):
     try:
@@ -306,6 +306,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
