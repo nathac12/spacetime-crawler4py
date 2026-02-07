@@ -255,13 +255,14 @@ def is_valid(url):
             r'/feed/',
             r'\?version=',
             r'/wp-json/',
-
+            
             r'/event/',
             r'/events/',
             r'\?tab_files=',
             r'\?do=index',
-            r'\??do=revision',
-            r'do=media',                     
+            r'\?do=revision',
+            r'\?do=login'
+            r'\?do=media',                     
             r'/sidebar',
             r'\?rev=',   
             r'\?do=backlink',
