@@ -40,8 +40,10 @@ STOP_WORDS = {
     'yourselves'
 }
 
+
 data = {
     'urls': set(),
+    'content_hashes': set(),
     'longest': {'url': '', 'count': 0},
     'words': Counter(),
     'subs': defaultdict(set)
@@ -57,6 +59,7 @@ def load_data():
             with open(DATA_FILE, 'r') as f:
                 saved = json.load(f)
                 data['urls'] = set(saved.get('urls', []))
+                data['content_hashes'] = set(saved.get('content_hashes', []))
                 data['longest'] = saved.get('longest', {'url': '', 'count': 0})
                 data['words'] = Counter(saved.get('words', {}))
                 sub_data = saved.get('subs', {})
@@ -71,6 +74,7 @@ def save_data():
         with open(DATA_FILE, 'w') as f:
             json.dump({
                 'urls': list(data['urls']),
+                'content_hashes': list(data['content_hashes']),
                 'longest': data['longest'],
                 'words': dict(data['words']),
                 'subs': {k: list(v) for k, v in data['subs'].items()}
@@ -122,6 +126,10 @@ def tokenize(text: str) -> List[str]:
         tokens.append("".join(current))
 
     return tokens
+    
+def fingerprint_content(tokens):
+    normalized = " ".join(tokens)
+    return hash(normalized)
 
 def tokenize_soup(soup: BeautifulSoup) -> List[str]:
     for tag in soup(["script", "style", "noscript", "iframe"]):
@@ -165,10 +173,17 @@ def extract_next_links(url, resp):
     try:
         pageContent = resp.raw_response.content 
         soup = BeautifulSoup(pageContent, 'lxml')
-    
-        #check for word count
+
         soup_tokens = tokenize_soup(soup)
-        tokenFreq = A.compute_word_frequencies(soup_tokens) #there is no function to call this?
+        tokenFreq = A.compute_word_frequencies(soup_tokens)
+
+        content_hash = fingerprint_content(soup_tokens)
+        if content_hash in data['content_hashes']:
+            logger.info(f"Duplicate content skipped: {url}")
+            return []
+
+        data['content_hashes'].add(content_hash)
+    
         word_count = 0
         for token, count in tokenFreq.items():
             if not (token in STOP_WORDS) : 
@@ -240,13 +255,16 @@ def is_valid(url):
             r'/wp-json/',
             r'/event/',
             r'/calendar/',
+            r'/events/\d{4}-\d{2}-\d{2}',
+            r'\?ical=',
+            r'\?outlook-ical=',
             r'\?action=',
             r'\?format=',
             r'/print/',
             r'\?print=',
             r'/pdf/',
             r'/download/',
-            r'/attachment/'
+            r'/attachment/',
             r'\?replytocom=',
             r'/comment-page-',
             r'\?like=',
@@ -307,12 +325,5 @@ def is_valid(url):
         return False
 
 load_data()
-
-
-
-
-
-
-
 
 
