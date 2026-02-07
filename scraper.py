@@ -254,6 +254,9 @@ def is_valid(url):
             r'\?version=',
             r'/wp-json/',
             r'/calendar/',
+            r'/events/\d{4}-\d{2}-\d{2}',
+            r'\?ical=',
+            r'\?outlook-ical=',
             r'\?action=',
             r'\?format=',
             r'/print/',
@@ -321,4 +324,5 @@ def is_valid(url):
         return False
 
 load_data()
+
 
