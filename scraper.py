@@ -255,6 +255,7 @@ def is_valid(url):
             r'/wp-json/',
             r'/event/',
             r'/events/',
+            r'\?tab_files='
             r'/calendar/',
             r'/events/\d{4}-\d{2}-\d{2}',
             r'\?ical=',
