@@ -186,15 +186,15 @@ def extract_next_links(url, resp):
 
         data['content_hashes'].add(content_hash)
     
-        word_count = 0
+        non_blank_word_count = 0
         for token, count in tokenFreq.items():
-            if not (token in STOP_WORDS): 
-                word_count += count
-        #check for low info content (trap detection)
+            if token not in STOP_WORDS and len(token) > 2:
+                non_blank_word_count += count
+        #check for low info content/blank pages (trap detection)
         
-        if word_count < 50:
-            logger.info(f"Only {word_count} words on {url}, skipping")
-            return linkList
+        if non_blank_word_count < 30:
+            logger.info(f"Blank/low content page skipped ({non_blank_word_count} content words): {url}")
+            return []
             
         update_data(url, word_count, tokenFreq)
 
@@ -344,5 +344,6 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
