@@ -247,58 +247,137 @@ def is_valid(url):
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
            return False
 
-        #some trap detection patterns
         trap_patterns = [
-            r'/tag/',
-            r'\?share=',
-            r'\bpage=\d+',
-            r'/feed/',
-            r'\?version=',
-            r'/wp-json/',
-
-            r'/event/',
-            r'/events/',
-            r'\?tab_files=',
-            r'\?do=index',
-            r'\?do=revision',
-            r'\?do=login',
-            r'do=media',                     
-            r'/sidebar',
-            r'\?rev=',   
-            r'\?do=backlink',
-            r'\?do=revisions',
-            r'\?do=recent',
-            r'\?do=export_pdf',
-            r'[?&]C=[NMSD];O=[AD]',
-            r'\?ns=',
-
             r'/calendar/',
-            r'/events/\d{4}-\d{2}-\d{2}',
+            r'/events?/\d{4}',
+            r'/events?/\d{4}-\d{2}',
+            r'/events?/\d{4}/\d{2}',
             r'\?ical=',
             r'\?outlook-ical=',
-            r'\?action=',
-            r'\?format=',
+            r'\?tribe-bar-date=',
+            r'tribe-bar-date=\d{4}-\d{2}-\d{2}',
+            r'\?calendar_day=',
+            r'\?eventDisplay=',
+            r'/feed/ics',
+            r'\?month=\d{4}-\d{2}',
+            r'\?yr=\d{4}',
+            r'\?date=\d{4}',
+
+            r'\bpage=\d+',
+            r'\bpaged=\d+',
+            r'/page/\d+',
+            r'\?pg=\d+',
+            r'\?p=\d+',
+            r'\?start=\d+',
+            r'\?offset=\d+',
+            r'\?from=\d+',
+            r'\?skip=\d+',
+            r'\?begin=\d+',
+            
+            r'\?sort=',
+            r'\?order=',
+            r'\?orderby=',
+            r'\?sortby=',
+            r'\?dir=asc',
+            r'\?dir=desc',
+            r'\?filter=',
+            r'\?view=',
+            r'\?display=',
+            r'[?&]C=[NMSD];O=[AD]',
+
+            r'\?do=index',
+            r'\?do=revision',
+            r'\?do=revisions',
+            r'\?do=backlink',
+            r'\?do=recent',
+            r'\?do=login',
+            r'\?do=register',
+            r'\?do=search',
+            r'\?do=admin',
+            r'\?do=export_',
+            r'do=media',
+            r'\?rev=',
+            r'\?tab_files=',
+            r'\?ns=',
+            r'\?idx=',
+            r'/sidebar',
+            r'/_media/',
+            r'/_detail/',
+            r'/_export/',
+
             r'/print/',
             r'\?print=',
+            r'\?Print=',
             r'/pdf/',
+            r'\?pdf=',
             r'/download/',
+            r'\?download=',
+            r'/export/',
+            r'\?export=',
             r'/attachment/',
-            r'\?replytocom=',
-            r'/comment-page-',
-            r'\?like=',
+            r'\?format=pdf',
+            r'\?format=xml',
+            r'\?format=json',
+            r'\?output=pdf',
+
+            r'\?version=',
+            r'\?ver=',
+            r'\?v=\d+',
+            r'\?revision=',
+            r'/versions/',
+            r'/revisions/',
+            r'\?diff=',
+            r'\?oldid=',
+
             r'\?login=',
-            r'\?idx=',
-            r'/trackback/',
-            r'\?filter=',
-            r'\?sort=',
-            r'\?order='
+            r'\?logout=',
+            r'\?action=login',
+            r'\?action=logout',
+            r'/login/',
+            r'/logout/',
+            r'/signin/',
+            r'/signout/',
+            r'/auth/',
+            r'\?redirect=',
+            r'\?return=',
+
+            r'\?search=',
+            r'\?q=',
+            r'\?query=',
+            r'\?keyword=',
+            r'\?s=.*&',
+            r'/search/',
+
+            r'/gallery/',
+            r'/galleries/',
+            r'\?gallery=',
+            r'/photos/',
+            r'/images/',
+            r'/media/',
+            r'\?attachment_id=',
+            r'\?image=',
+            r'\?img=',
+
+            r'\?fb=',
+            r'\?twitter=',
+            r'\?utm_source=',
+            r'\?utm_medium=',
+            r'\?utm_campaign=',
+
+            r'/ajax/',
+            r'\?ajax=',
+            r'/api/',
+            r'\?action=',
+            r'/json/',
+            r'/xml/',
         ]
         
+        url_lower = url.lower()
         for pattern in trap_patterns:
-            if re.search(pattern, url.lower()):
+            if re.search(pattern, url_lower):
                 logger.debug(f"Trap pattern blocked: {url}")
                 return False
-                
+          
         if re.search(r'tribe-bar-date=\d{4}-\d{2}-\d{2}', url):
             logger.debug(f"Calendar date trap blocked: {url}")
             return False
@@ -323,15 +402,16 @@ def is_valid(url):
         if len(url) > 200:
             logger.info(f"URL too long blocked: {url}")
             return False
-        
+
+        if '//' in parsed.path:
+            logger.debug(f"Multiple consecutive slashes in path: {url}")
+            return False
+            
         query = parsed.query.lower()
         if query:
-            # Too many query parameters is suspicious
             if query.count('&') > 5:
                 logger.debug(f"Too many query params: {url}")
                 return False
-            
-            #check for session IDs & other trap
             trap_params = ['sessionid', 'sid', 'phpsessid', 'jsessionid']
             if any(param in query for param in trap_params):
                 logger.debug(f"Session ID in URL: {url}")
@@ -344,6 +424,7 @@ def is_valid(url):
         return False
 
 load_data()
+
 
 
 
